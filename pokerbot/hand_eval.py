@@ -73,6 +73,85 @@ class Two:
         [0, 0, 0.68174962292609353, 0.72398190045248867, 0.74811463046757165, 0.79185520361990946, 0.78280542986425339, 0.82503770739064852, 0.8491704374057315, 0.88386123680241324, 0.91402714932126694, 0.93363499245852188, 0.94268476621417796, 0.95475113122171951, 1.0, 0]
     ]
 
+    relative_order_matrix = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 11],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 8],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 6, 1]
+    ]
+
+
+    @staticmethod
+    def chen_power_rank(hand):
+        """Power rank algorithm by Bill Chen"""
+
+        # Highest Card
+        # Based on the highest card, assign points as follows: Ace = 10 points,
+        # K = 8 points, Q = 7 points, J = 6 points. 10 through 2, half of face
+        # value (10 = 5 points, 9 = 4.5 points, etc.)
+        points = 0
+        if hand[0].rank == 14:
+            points = 10
+        elif hand[0].rank == 13:
+            points = 8
+        elif hand[0].rank == 12:
+            points = 7
+        elif hand[0].rank == 11:
+            points = 6
+        else:
+            points = hand[0].rank / 2
+
+        # Pairs
+        # For pairs, multiply the points by 2 (AA 20, KK = 16, etc.), with a
+        # minimum of 5 points for any pair. 55 is given an extra point (=6).
+        if hand[0].rank == hand[1].rank:
+            points *= 2
+            if hand[0].rank == 5:
+                points = 6
+            elif points < 5:
+                points = 5
+        else:
+            # Suited
+            # Add 2 points for suited cards.
+            if hand[0].suit == hand[1].suit:
+                points += 2
+
+            # Closeness
+            #
+            # Subtract 1 point for 1 gappers (AQ, J9) 2 points for 2 gappers
+            # (J8, AJ). 4 points for 3 gappers (J7, 73). 5 points for larger
+            # gappers, including A2 A3 A4
+            # Add an extra point if connected or 1-gap and your highest card is
+            # lower than Q (since you then can make all higher straights)
+            if hand[0].rank == 14 and hand[1].rank in [2, 3, 4]:
+                points -= 5
+            else:
+                gap = hand[0].rank - hand[1].rank - 1
+                if gap in [1, 2]:
+                    points -= gap
+                elif gap == 3:
+                    points -= 4
+                else:
+                    points -= 5
+
+                if gap == 0 or gap == 1 and hand[0].rank < 12:
+                    points += 1
+
+        return points
+
+    @staticmethod
+    def relative_rank(hand):
+        return 1
+
     @staticmethod
     def evaluate_rank(hand):
         hand = sorted(hand, key=lambda a: a.rank)

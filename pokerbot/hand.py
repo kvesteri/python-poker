@@ -22,6 +22,10 @@ class Hand(list):
     def is_pair(self):
         return self[0].rank == self[1].rank
 
+    @property
+    def gap(self):
+        return self[0].rank - self[1].rank - 1
+
     def __repr__(self):
         return 'Hand(%s)' % ', '.join(repr(card) for card in self)
 

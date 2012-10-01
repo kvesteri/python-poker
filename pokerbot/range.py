@@ -190,18 +190,38 @@ class Range(object):
         if suited:
             min_suited = min(suited)
             max_suited = max(suited)
+            parts.append(
+                str(min_suited[0].str_rank) +
+                str(min_suited[1].str_rank)
+            )
             if max_suited[0].str_rank == 'A' and max_suited[1].str_rank == 'K':
-                parts.append(
-                    str(min_suited[0].str_rank) +
-                    str(min_suited[1].str_rank) + 's+'
+                parts[-1] += 's+'
+            else:
+                parts[-1] += (
+                    '-' + max_suited[0].str_rank + max_suited[1].str_rank + 's'
                 )
         if offsuited:
             min_offsuited = min(offsuited)
+            max_offsuited = max(offsuited)
             parts.append(
                 str(min_offsuited[0].str_rank) +
-                str(min_offsuited[1].str_rank) + 'o+'
+                str(min_offsuited[1].str_rank)
             )
+            if (max_offsuited[0].str_rank == 'A' and
+                    max_offsuited[1].str_rank == 'K'):
+                parts[-1] += 'o+'
+            else:
+                parts[-1] += (
+                    '-' + max_offsuited[0].str_rank +
+                    max_offsuited[1].str_rank + 'o'
+                )
         return ', '.join(parts)
+
+    def __add__(self, other):
+        return Range(self.hands + other.hands)
+
+    def __sub__(self, other):
+        return Range(self.hands - other.hands)
 
     def __len__(self):
         return len(self.hands)

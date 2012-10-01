@@ -1,3 +1,4 @@
+from .board import CardCollection
 from .hand_eval import Two
 
 
@@ -40,3 +41,24 @@ class Hand(list):
 
     def __lt__(self, other):
         return self.score > other.score
+
+
+class StartingHand(CardCollection):
+    def __init__(self, cards):
+        self.cards = cards
+        self.cards.sort()
+        self.cards.reverse()
+
+    def absolute_strength():
+        raise NotImplementedError
+
+    def relative_strength():
+        raise NotImplementedError
+
+
+class HoldEmStartingHand(StartingHand):
+    def absolute_strength():
+        raise NotImplementedError
+
+    def relative_strength():
+        raise NotImplementedError

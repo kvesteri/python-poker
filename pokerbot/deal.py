@@ -23,6 +23,10 @@ class ActOutOfTurn(Exception):
     pass
 
 
+class PlayersNotActed(Exception):
+    pass
+
+
 class Deal(object):
     phases = [None, 'pre-flop', 'flop', 'turn', 'river']
 
@@ -34,6 +38,7 @@ class Deal(object):
         self.starting_hands = {}
         self.deck = Deck()
         self.phase = None
+        self.phase_completed = False
         self.board = Board()
         self.pot = 0
         self.players_involved = copy(table.seats)
@@ -59,6 +64,8 @@ class Deal(object):
             if amount == 0:
                 raise IllegalAction()  # should check instead of call
             self.put_in_pot(player, amount)
+            if len(bets) > 1:
+                self.phase_completed = True
         elif type == 'bet':
             if self.table.balances[player.name] < amount:
                 raise BetTooMuch()
@@ -66,8 +73,12 @@ class Deal(object):
         elif type == 'check':
             if bets[player.name] < max(bets.values()):
                 raise IllegalAction()
+            if len(bets) > 1:
+                self.phase_completed = True
         elif type == 'fold':
             self.players_involved.remove(player)
+            if len(self.players_involved) == 1:
+                self.is_completed = True
 
         self.actions.append(Action(self, player, type, amount, self.phase))
         self.player_to_act_index += 1
@@ -124,8 +135,13 @@ class Deal(object):
         self.table.balances[player.name] -= amount
         self.pot += amount
         self.betting_rounds[self.phase][player.name] += amount
+        if self.table.balances[player.name] == 0:
+            self.players_involved.remove(player)
 
     def deal_flop(self, cards=[]):
+        if not self.phase_completed:
+            raise PlayersNotActed()
+        self.phase_completed = False
         self.phase = 'flop'
         if cards:
             self.board.cards += cards
@@ -133,6 +149,9 @@ class Deal(object):
             self.board.cards += self.deck.draw(3)
 
     def deal_turn(self, cards=[]):
+        if not self.phase_completed:
+            raise PlayersNotActed()
+        self.phase_completed = False
         self.phase = 'turn'
         if cards:
             self.board.cards += cards
@@ -140,6 +159,9 @@ class Deal(object):
             self.board.cards += self.deck.draw(1)
 
     def deal_river(self, cards=[]):
+        if not self.phase_completed:
+            raise PlayersNotActed()
+        self.phase_completed = False
         self.phase = 'river'
         if cards:
             self.board.cards += cards

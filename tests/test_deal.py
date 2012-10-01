@@ -1,7 +1,9 @@
 from pytest import raises
 from pokerbot import Table, Player
 from pokerbot.card import Card
-from pokerbot.deal import ActOutOfTurn, BetTooMuch, Busto, IllegalAction
+from pokerbot.deal import (
+    ActOutOfTurn, BetTooMuch, Busto, IllegalAction, PlayersNotActed
+)
 
 
 class DealTestCase(object):
@@ -14,7 +16,7 @@ class DealTestCase(object):
         self.deal = self.table.new_deal()
 
 
-class TestDeal(DealTestCase):
+class TestDealPreFlop(DealTestCase):
     def test_all_players_acted(self):
         self.deal.deal_preflop({
             'John': [Card('Ad'), Card('Kd')],
@@ -47,6 +49,54 @@ class TestDeal(DealTestCase):
         })
         with raises(ActOutOfTurn):
             self.phil.call(self.deal)
+
+
+class TestDealFlop(DealTestCase):
+    def setup_method(self, method):
+        DealTestCase.setup_method(self, method)
+        self.deal.deal_preflop({
+            'John': [Card('Ad'), Card('Kd')],
+            'Phil': [Card('As'), Card('5c')]
+        })
+
+    def test_raises_exception_if_all_players_havent_acted(self):
+        with raises(PlayersNotActed):
+            self.deal.deal_flop([Card('6s'), Card('7s'), Card('Ks')])
+
+
+class TestDealTurn(DealTestCase):
+    def setup_method(self, method):
+        DealTestCase.setup_method(self, method)
+        self.deal.deal_preflop({
+            'John': [Card('Ad'), Card('Kd')],
+            'Phil': [Card('As'), Card('5c')]
+        })
+
+    def test_raises_exception_if_all_players_havent_acted(self):
+        self.john.call(self.deal)
+        self.phil.check(self.deal)
+        self.deal.deal_flop([Card('6s'), Card('7s'), Card('Ks')])
+        with raises(PlayersNotActed):
+            self.deal.deal_turn([Card('7d')])
+
+
+class TestDealRiver(DealTestCase):
+    def setup_method(self, method):
+        DealTestCase.setup_method(self, method)
+        self.deal.deal_preflop({
+            'John': [Card('Ad'), Card('Kd')],
+            'Phil': [Card('As'), Card('5c')]
+        })
+
+    def test_raises_exception_if_all_players_havent_acted(self):
+        self.john.call(self.deal)
+        self.phil.check(self.deal)
+        self.deal.deal_flop([Card('6s'), Card('7s'), Card('Ks')])
+        self.john.check(self.deal)
+        self.phil.check(self.deal)
+        self.deal.deal_turn([Card('Kc')])
+        with raises(PlayersNotActed):
+            self.deal.deal_river([Card('2s')])
 
 
 class ActionTestCase(DealTestCase):
@@ -89,3 +139,7 @@ class TestBetAction(ActionTestCase):
     def test_bet_puts_money_in_pot(self):
         self.john.bet(self.deal, 5)
         assert self.deal.pot == 8
+
+    def test_player_is_no_longer_involved_if_he_is_allin(self):
+        self.john.bet(self.deal, 99)
+        assert self.deal.players_involved == [self.phil]
